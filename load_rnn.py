@@ -69,7 +69,9 @@ def generate_text(starting_character, num_generated_characters):
     return generated_text
 
 if __name__ == '__main__':
-    text_name = "peter_pan"
+    model_type = "lstm"
+    text_name = "python_snippets_1000"
+    INPUT_SEQUENCE_LENGTH = 10
 
     with open(f"texts/{text_name}.txt", "r") as file:
         text = file.read()
@@ -89,13 +91,10 @@ if __name__ == '__main__':
     for char, i in CHARACTER_ENCODING.items():
         INDEX_ENCODING[i] = char
 
-
-    INPUT_SEQUENCE_LENGTH = 5
-
-    file_name = f"peter_pan_gru_{INPUT_SEQUENCE_LENGTH}chars"
+    file_name = f"{text_name}_{model_type}_{INPUT_SEQUENCE_LENGTH}chars"
     file_path = f"models/{file_name}.pth"
 
-    model = GRUCharPredictor()
+    model = GRUCharPredictor() if model_type == "gru" else LSTMCharPredictor()
     model.load_state_dict(torch.load(file_path, weights_only=True))
 
     generated_text = generate_text("P", 1000)

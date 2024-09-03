@@ -52,10 +52,13 @@ def get_avaialable_file_name(file_name, extension):
     return available_file_name + extension
 
 if __name__ == '__main__':
-    SEQUENCE_LENGTH = 5
-    TEXT_NAME = "shakespeare"
+    SEQUENCE_LENGTH = 15
+    print("sequence length:", SEQUENCE_LENGTH)
+    TEXT_NAME = "python_snippets"
     NUM_GENERATED_CHARACTERS = 1000
-    generated_text = generate_text()
+    NUM_GENERATED_SEQUENCES = 1
+    for _ in range(NUM_GENERATED_SEQUENCES):
+        generated_text = generate_text()
 
-    with open(get_avaialable_file_name(f"generated_texts/{TEXT_NAME}_markov_chain_{SEQUENCE_LENGTH}chars", ".txt"), "w") as file:
-        file.write(generated_text)
+        with open(get_avaialable_file_name(f"generated_texts/{TEXT_NAME}_markov_chain_{SEQUENCE_LENGTH}chars", ".txt"), "w") as file:
+            file.write(generated_text)

@@ -1,0 +1,2600 @@
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+
+    mid = len(arr) // 2
+    left_half = merge_sort(arr[:mid])
+    right_half = merge_sort(arr[mid:])
+
+    return merge(left_half, right_half)
+
+def merge(left, right):
+    result = []
+    i = j = 0
+
+    while i < len(left) and j < len(right):
+        if left[i] >= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+
+    result.extend(left[i:])
+    result.extend(right[j:])
+
+    return result
+
+A = [4, 7, 2, 9, 6]
+sorted_A = merge_sort(A)
+print(sorted_A)
+
+
+def top_k_rows(matrix, k):
+    # Calculate the sum of absolute differences for each row
+    diffs = []
+    for row in matrix:
+        row_diff = 0
+        for i in range(len(row) - 1):
+            if row[i] is not None and row[i + 1] is not None:
+                row_diff += abs(row[i] - row[i + 1])
+        diffs.append(row_diff)
+    
+    # Sort the rows based on the sum of absolute differences
+    sorted_rows = [row for _, row in sorted(zip(diffs, matrix))]
+    
+    # Return the top k rows
+    return sorted_rows[:k]
+
+
+from math import radians, cos, sin, sqrt, atan2
+
+# WGS84 constants (semi-major and semi-minor axis in meters)
+WGS84_A = 6378137.0
+WGS84_B = 6356752.314245
+
+def dms_to_decimal(degrees, minutes, seconds, positive=True):
+    """Converts degrees, minutes, and seconds to decimal degrees."""
+    sign = 1 if positive else -1
+    return sign * (abs(degrees) + minutes / 60.0 + seconds / 3600.0)
+
+def decimal_to_dms(decimal):
+    """Converts decimal degrees to degrees, minutes, and seconds."""
+    sign = "-" if decimal < 0 else ""
+    decimal = abs(decimal)
+    degrees = int(decimal)
+    decimal = (decimal - degrees) * 60
+    minutes = int(decimal)
+    decimal = (decimal - minutes) * 60
+    seconds = round(decimal, 3)
+    return f"{sign}{degrees}°{minutes}'{seconds}\""
+
+def dms_to_wgs84(latitude_d, latitude_m, latitude_s, longitude_d, longitude_m, longitude_s, observer_latitude, observer_longitude):
+    """Converts latitude and longitude in degrees, minutes, and seconds to WGS84 decimal degrees,
+    taking into account the Earth's curvature and observer's position."""
+    # Convert DMS to decimal
+    lat = dms_to_decimal(latitude_d, latitude_m, latitude_s)
+    lon = dms_to_decimal(longitude_d, longitude_m, longitude_s)
+
+    # Convert observer's position to radians
+    obs_lat = radians(observer_latitude)
+    obs_lon = radians(observer_longitude)
+
+    # Convert latitude and longitude to radians
+    lat_rad = radians(lat)
+    lon_rad = radians(lon)
+
+    # Calculate the radius of curvature at the observer's latitude
+    cos_obs_lat = cos(obs_lat)
+    sin_obs_lat = sin(obs_lat)
+    a_squared = WGS84_A ** 2
+    b_squared = WGS84_B ** 2
+    e_squared = 1 - (b_squared / a_squared)
+    p = sqrt(cos_obs_lat ** 2 * a_squared + sin_obs_lat ** 2 * b_squared)
+    n = a_squared / p
+
+    # Calculate Cartesian coordinates (x, y, z) of the observer in the WGS84 ellipsoid
+    x = (n + obs_lat) * cos(obs_lat) * cos(obs_lon)
+    y = (n + obs_lat) * cos(obs_lat) * sin(obs_lon)
+    z = (n * (b_squared / a_squared) + obs_lat) * sin(obs_lat)
+
+    # Calculate Cartesian coordinates (x', y', z') of the point in the WGS84 ellipsoid
+    sin_lat = sin(lat_rad)
+    cos_lat = cos(lat_rad)
+    sin_lon = sin(lon_rad)
+    cos_lon = cos(lon_rad)
+    h = 0  # height above ellipsoid (ignored for simplicity)
+    r = WGS84_A / sqrt(1 - e_squared * sin_lat ** 2)
+    x_prime = (r + h) * cos_lat * cos_lon
+    y_prime = (r + h) * cos_lat * sin_lon
+    z_prime = (r * (1 - e_squared) + h) * sin_lat
+
+    # Calculate the geocentric distance between the observer and the point
+    dx = x_prime - x
+    dy = y_prime - y
+    dz = z_prime - z
+    d = sqrt(dx ** 2 + dy ** 2 + dz ** 2)
+
+    # Calculate the azimuth (bearing) and elevation angles between the observer and the point
+    azimuth = atan2(dy, dx)
+    elevation = atan2(z_prime - z, sqrt(dx ** 2 + dy ** 2))
+
+    # Calculate the geodetic latitude and longitude of the point
+    u = atan2(z_prime, sqrt(dx ** 2 + dy ** 2))
+    lat_geod = atan2(z_prime + e_squared * sin(u) ** 3 * r, d - e_squared * cos(u) ** 3 * r)
+    lon_geod = atan2(y_prime, x_prime)
+
+    # Convert geodetic latitude and longitude to decimal degrees
+    lat_wgs84 = degrees(lat_geod)
+    lon_wgs84 = degrees(lon_geod)
+
+    # Return the WGS84 decimal latitude and longitude
+    return lat_wgs84, lon_wgs84
+
+
+def rearrange_string(string: str) -> str:
+    # Step 1: Create a dictionary to store the frequency of each character
+    freq = {}
+    for char in string:
+        freq[char] = freq.get(char, 0) + 1
+    
+    # Step 2: Sort the characters based on their frequency in descending order
+    sorted_chars = sorted(freq.keys(), key=lambda x: freq[x], reverse=True)
+    
+    # Step 3: Create an empty result string
+    result = ""
+    
+    # Step 4: Iterate over the sorted characters
+    for char in sorted_chars:
+        # Step 5: Add the current character to the result string
+        result += char
+        
+        # Step 6: Find the first character that is different from the current character
+        for i in range(len(sorted_chars)):
+            if sorted_chars[i] != char:
+                # Step 7: Add the different character to the result string
+                result += sorted_chars[i]
+                
+                # Step 8: Decrement the frequency of the current character
+                freq[char] -= 1
+                
+                # Step 9: Add the current character back to the sorted list if its frequency is greater than 0
+                if freq[char] > 0:
+                    sorted_chars.insert(i+1, char)
+                
+                break
+    
+    # Step 10: Return the result string
+    return result
+
+
+import re
+def extract_name_from_email(email):
+    # Split the email address into username and domain name
+    username, domain = email.split("@")
+    
+    # Remove any dots from the username and replace them with spaces
+    username = username.replace(".", " ")
+    
+    # Remove any underscores from the username and replace them with spaces
+    username = username.replace("_", " ")
+    
+    # Remove any hyphens from the username and replace them with spaces
+    username = username.replace("-", " ")
+    
+    # Split the username into individual words
+    words = username.split()
+    
+    # Initialize the first name and last name variables
+    first_name = ""
+    last_name = ""
+    
+    # Loop through the words in the username and try to identify the first and last name
+    for i, word in enumerate(words):
+        # If the word is in all caps, assume it's an acronym and skip it
+        if word.isupper():
+            continue
+        
+        # If the word is the last word in the username, assume it's the last name
+        if i == len(words) - 1:
+            last_name = word
+        else:
+            # Check if the next word is also part of the last name
+            next_word = words[i+1]
+            if next_word.lower() in ["van", "von", "de", "del", "da", "di", "du"]:
+                last_name = word + " " + next_word
+            else:
+                # Otherwise, assume the word is the first name
+                first_name = word
+    
+    # If the first name is still empty, assume the first word is the first name
+    if first_name == "":
+        first_name = words[0]
+    
+    # Return the first and last name
+    return (first_name, last_name)
+# Test the function with the sample email addresses
+email_list = ["john.doe@example.com", "jane.smith@example.com", "jack.brown@example.com"]
+for email in email_list:
+    first_name, last_name = extract_name_from_email(email)
+    print("First Name: " + first_name)
+    print("Last Name: " + last_name)
+
+
+def find_mean_median(numbers):
+    # Calculate mean
+    mean = sum(numbers) / len(numbers)
+
+    # Calculate median
+    sorted_numbers = sorted(numbers)
+    n = len(sorted_numbers)
+    if n % 2 == 0:
+        median = (sorted_numbers[n//2 - 1] + sorted_numbers[n//2]) / 2
+    else:
+        median = sorted_numbers[n//2]
+
+    return mean, median
+
+numbers = [1, 6, 4, 9, 5, 8, 2]
+print(find_mean_median(numbers))
+
+
+def modified_insertion_sort(arr):
+    for i in range(1, len(arr)):
+        current = arr[i]
+        j = i - 1
+
+        while j >= 0 and current > arr[j]:
+            arr[j + 1] = arr[j]
+            j -= 1
+
+        arr[j + 1] = current
+
+    return arr
+
+arr = [10, 7, 12, 8, 3]
+sorted_arr = modified_insertion_sort(arr)
+print(sorted_arr)
+
+
+def sort_dictionary(dictionary):
+    # Step 1: Get the list of keys from the dictionary
+    keys = dictionary.keys()
+    
+    # Step 2: Sort the list of keys in reverse order
+    sorted_keys = sorted(keys, reverse=True)
+    
+    # Step 3: Create an empty dictionary
+    sorted_dict = {}
+    
+    # Step 4: Iterate over the sorted keys
+    for key in sorted_keys:
+        # Step 5: Retrieve the value from the original dictionary
+        value = dictionary[key]
+        
+        # Step 6: Add the key-value pair to the new dictionary
+        sorted_dict[key] = value
+    
+    # Step 7: Return the new sorted dictionary
+    return sorted_dict
+
+
+from collections import defaultdict
+def numRabbits(answers):
+    count = defaultdict(int)
+    res = 0
+    for a in answers:
+        count[a] += 1
+        if count[a] == 1:
+            res += (a + 1)
+        elif count[a] > a + 1:
+            count[a] = 1
+            res += (a + 1)
+    return res
+
+
+import requests
+def get_compound_name(formula):
+    url = f"https://cactus.nci.nih.gov/chemical/structure/{formula}/iupac_name"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.text.strip()
+    else:
+        return None
+compound_name = get_compound_name('C6H12O6')
+print(compound_name)
+
+
+def calculate_factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * calculate_factorial(n - 1)
+
+def calculate_factorials(arr):
+    result = []
+    for num in arr:
+        result.append(calculate_factorial(num))
+    return result
+
+arr = [1, 2, 3, 4, 5]
+factorials = calculate_factorials(arr)
+print(factorials)
+
+
+def is_prime(n):
+    if n <= 1:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+primes_squared = []
+for num in range(0, 1001):
+    if is_prime(num):
+        primes_squared.append(num ** 2)
+
+print(primes_squared)
+
+
+def is_palindrome(string):
+    # Check if a string is a palindrome
+    n = len(string)
+    for i in range(n//2):
+        if string[i] != string[n-i-1]:
+            return False
+    return True
+
+def shortest_palindrome(string):
+    # Find the shortest possible palindrome with at least one uppercase letter
+    n = len(string)
+    for i in range(n):
+        # Check if adding the first i characters in reverse order results in a palindrome
+        temp = string[:i][::-1] + string
+        if is_palindrome(temp) and any(c.isupper() for c in temp):
+            return temp
+
+# Test the function
+input_string = input("Enter a string: ")
+result = shortest_palindrome(input_string)
+print("Shortest palindrome with at least one uppercase letter:", result)
+
+
+def binary_search(arr, target, low, high):
+    if low > high:
+        return -1
+
+    mid = (low + high) // 2
+
+    if arr[mid] == target:
+        if mid == 0 or arr[mid-1] != target:
+            return mid
+        else:
+            return binary_search(arr, target, low, mid-1)
+    elif arr[mid] < target:
+        return binary_search(arr, target, mid+1, high)
+    else:
+        return binary_search(arr, target, low, mid-1)
+
+
+def find_target_position(arr, target):
+    return binary_search(arr, target, 0, len(arr)-1)
+
+
+from typing import List, Dict
+
+def find_divisible_numbers(numbers: List[int]) -> List[int]:
+    divisible_numbers = []
+    for num in numbers:
+        if num % 3 == 0 and num % 7 == 0:
+            divisible_numbers.append(num)
+    return divisible_numbers
+
+def calculate_average(numbers: List[int]) -> float:
+    if len(numbers) == 0:
+        return 0
+    return sum(numbers) / len(numbers)
+
+def find_maximum(numbers: List[int]) -> int:
+    if len(numbers) == 0:
+        return float('-inf')
+    return max(numbers)
+
+def find_minimum(numbers: List[int]) -> int:
+    if len(numbers) == 0:
+        return float('inf')
+    return min(numbers)
+
+def count_occurrences(numbers: List[int]) -> Dict[int, int]:
+    occurrences = {}
+    for num in numbers:
+        if num % 3 == 0 and num % 7 == 0:
+            if num in occurrences:
+                occurrences[num] += 1
+            else:
+                occurrences[num] = 1
+    return occurrences
+
+
+class MinHeap:
+    def __init__(self):
+        self.heap = []
+        self.size = 0
+
+    def parent(self, index):
+        return index // 2
+
+    def left_child(self, index):
+        return index * 2
+
+    def right_child(self, index):
+        return (index * 2) + 1
+
+    def swap(self, i, j):
+        self.heap[i], self.heap[j] = self.heap[j], self.heap[i]
+
+    def insert(self, value):
+        self.heap.append(value)
+        self.size += 1
+        self.heapify_up(self.size)
+
+    def heapify_up(self, index):
+        while index > 1 and self.heap[index] < self.heap[self.parent(index)]:
+            self.swap(index, self.parent(index))
+            index = self.parent(index)
+
+    def remove_min(self):
+        if self.size == 0:
+            return None
+        min_value = self.heap[1]
+        self.heap[1] = self.heap[self.size]
+        self.heap.pop()
+        self.size -= 1
+        self.heapify_down(1)
+        return min_value
+
+    def heapify_down(self, index):
+        while self.left_child(index) <= self.size:
+            smallest_child_index = self.get_smallest_child_index(index)
+            if self.heap[index] > self.heap[smallest_child_index]:
+                self.swap(index, smallest_child_index)
+            index = smallest_child_index
+
+    def get_smallest_child_index(self, index):
+        if self.right_child(index) > self.size:
+            return self.left_child(index)
+        else:
+            if self.heap[self.left_child(index)] < self.heap[self.right_child(index)]:
+                return self.left_child(index)
+            else:
+                return self.right_child(index)
+
+    def peek(self):
+        if self.size == 0:
+            return None
+        return self.heap[1]
+
+    def update(self, old_value, new_value):
+        for i in range(1, self.size + 1):
+            if self.heap[i] == old_value:
+                self.heap[i] = new_value
+                if new_value < old_value:
+                    self.heapify_up(i)
+                else:
+                    self.heapify_down(i)
+                break
+
+
+def decimal_to_binary(n):
+    binary_rep = ""
+    for i in range(7, -1, -1):
+        bit = (n >> i) & 1
+        binary_rep += str(bit)
+    return binary_rep
+
+
+import numpy as np
+
+def is_prime(num):
+    if num < 2:
+        return False
+    for i in range(2, int(num ** 0.5) + 1):
+        if num % i == 0:
+            return False
+    return True
+
+def is_perfect_square(num):
+    if num < 0:
+        return False
+    root = int(num ** 0.5)
+    return root * root == num
+
+# Define the size of the array
+array_size = 20
+
+# Generate a list of prime numbers
+prime_numbers = [num for num in range(2, 100) if is_prime(num)]
+
+# Generate a list of perfect squares
+perfect_squares = [num * num for num in range(100)]
+
+# Create the initial array with all elements set to 0
+arr = np.zeros(array_size)
+
+# Reshape the array into a 2D array with 5 columns
+arr = arr.reshape(-1, 5)
+
+# Assign each row with a prime number
+for i in range(arr.shape[0]):
+    arr[i, :] = prime_numbers[i]
+
+# Assign each column with a perfect square
+for j in range(arr.shape[1]):
+    arr[:, j] = perfect_squares[j]
+
+print(arr)
+
+
+class SumCalculator:
+    def __init__(self, num1, num2):
+        self.num1 = num1
+        self.num2 = num2
+
+    def calculate_sum(self):
+        carry = 0
+        result = 0
+        mask = 1
+        while mask:
+            bit1 = self.num1 & mask
+            bit2 = self.num2 & mask
+            sum_bits = bit1 ^ bit2 ^ carry
+            carry = (bit1 & bit2) | (bit1 & carry) | (bit2 & carry)
+            result = result | sum_bits
+            mask = mask << 1
+        return result
+
+    def is_even(self):
+        return self.calculate_sum() & 1 == 0
+
+
+movies = [
+    {"title": "The Jazz Singer", "year": 1927, "genre": "musical/drama", "country": "USA", "budget": 500000},
+    {"title": "King Kong", "year": 1933, "genre": "adventure/fantasy", "country": "USA", "budget": 672000},
+    {"title": "Snow White and the Seven Dwarfs", "year": 1937, "genre": "musical/fantasy", "country": "USA", "budget": 1499000},
+    {"title": "Singin' in the Rain", "year": 1952, "genre": "musical/comedy", "country": "USA", "budget": 2543000},
+    {"title": "Jurassic Park", "year": 1993, "genre": "sci-fi/adventure", "country": "USA", "budget": 63000000},
+    {"title": "The Lord of the Rings: The Fellowship of the Ring", "year": 2001, "genre": "fantasy/adventure", "country": "New Zealand/USA", "budget": 93000000}
+]
+# Filter movies with budget of at least $5 million
+movies = list(filter(lambda x: x["budget"] >= 5000000, movies))
+# Sort movies by release date
+movies.sort(key=lambda x: x["year"])
+# Print table header
+print("{:<50} {:<10} {:<20}".format("Title", "Budget", "Country"))
+# Print each movie's information
+for movie in movies:
+    print("{:<50} ${:<10,} {:<20}".format(movie["title"], movie["budget"], movie["country"]))
+
+
+import math
+
+class Rectangle:
+    def __init__(self, length, width):
+        self.length = length
+        self.width = width
+        self.validate()
+
+    def validate(self):
+        if not isinstance(self.length, int) or not isinstance(self.width, int):
+            raise ValueError("Length and width must be integers")
+        if self.length <= 0 or self.width <= 0:
+            raise ValueError("Length and width must be greater than 0")
+
+    def getArea(self):
+        return self.length * self.width
+
+    def getPerimeter(self):
+        return 2 * (self.length + self.width)
+
+    def getDiagonal(self):
+        return math.sqrt(self.length**2 + self.width**2)
+
+    def isSquare(self):
+        return self.length == self.width
+
+    def toString(self):
+        area = self.getArea()
+        perimeter = self.getPerimeter()
+        diagonal = self.getDiagonal()
+        return f"Rectangle(length={self.length}, width={self.width}, area={area}, perimeter={perimeter}, diagonal={diagonal})"
+
+
+def count_vowels(string):
+    vowels = {'a': 0, 'e': 0, 'i': 0, 'o': 0, 'u': 0}
+    
+    for char in string:
+        char = char.lower()
+        if char in vowels:
+            vowels[char] += 1
+    
+    return vowels
+
+# Example usage
+input_string = "Hello World"
+frequency = count_vowels(input_string)
+print(frequency)
+
+
+def generate_permutations(s):
+    perms = []
+    
+    def permute(prefix, remaining, perms):
+        if len(remaining) == 0:
+            perms.append(prefix)
+        else:
+            prev_char = None
+            for i in range(len(remaining)):
+                if remaining[i] == prev_char:
+                    continue
+                curr_char = remaining[i]
+                permute(prefix + curr_char, remaining[:i] + remaining[i+1:], perms)
+                prev_char = curr_char
+    
+    permute("", s, perms)
+    return perms
+
+
+from datetime import datetime
+# Input DateTime string
+dt_string = "2022-01-01T12:00:00Z"
+# Convert to datetime object
+dt_object = datetime.fromisoformat(dt_string)
+# Output day of the week
+day_of_week = dt_object.strftime("%A")
+print(day_of_week)
+
+
+def is_prime(n):
+    if n <= 1:
+        return False
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+def print_prime_numbers(start, end):
+    if start <= end:
+        print("The first integer must be greater than the second integer.")
+        return
+    prime_numbers = [n for n in range(start, end - 1, -1) if is_prime(n)]
+    if prime_numbers:
+        print("Prime numbers between", start, "and", end, "are:")
+        for prime in prime_numbers:
+            print(prime)
+    else:
+        print("There are no prime numbers between", start, "and", end)
+
+# Example usage
+print_prime_numbers(20, 2)
+
+
+def is_prime(num):
+    if num < 2:
+        return False
+    for i in range(2, int(num**0.5) + 1):
+        if num % i == 0:
+            return False
+    return True
+
+def odd_prime_numbers(lst):
+    return list(filter(lambda x: is_prime(x) and x % 2 != 0, lst))
+
+
+def second_largest(numbers):
+    # Remove duplicates and sort the list in descending order
+    distinct_numbers = sorted(set(numbers), reverse=True)
+    
+    # If there are less than 2 distinct numbers, return -1
+    if len(distinct_numbers) < 2:
+        return -1
+    
+    # Return the second largest distinct number
+    return distinct_numbers[1]
+
+
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    font_size = request.form['font_size']
+    font_color = request.form['font_color']
+
+    if not validate_font_size(font_size):
+        return render_template('index.html', error_message='Invalid font size. Please enter a value between 10 and 40.')
+
+    if not validate_font_color(font_color):
+        return render_template('index.html', error_message='Invalid font color. Please enter a valid hexadecimal color code.')
+
+    return render_template('index.html', font_size=font_size, font_color=font_color)
+
+def validate_font_size(font_size):
+    try:
+        font_size = int(font_size)
+        if font_size < 10 or font_size > 40:
+            return False
+    except ValueError:
+        return False
+    return True
+
+def validate_font_color(font_color):
+    if not font_color.startswith('#') or len(font_color) != 7:
+        return False
+    try:
+        int(font_color[1:], 16)
+    except ValueError:
+        return False
+    return True
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+import random
+
+numbers = []
+while len(numbers) < 5:
+    num = random.randint(1, 100)
+    if num % 3 == 0 and num % 5 != 0 and num not in numbers:
+        numbers.append(num)
+
+print(numbers)
+
+
+def fibonacci_sequence(n):
+    sequence = [0, 1]  # initialize the sequence with the first two numbers: 0 and 1
+
+    # calculate subsequent Fibonacci numbers until reaching the given number
+    while sequence[-1] + sequence[-2] <= n:
+        next_number = sequence[-1] + sequence[-2]
+        sequence.append(next_number)
+
+    return sequence
+
+# take user input for the upper limit of the Fibonacci sequence
+limit = int(input("Enter a number: "))
+
+# calculate and print the Fibonacci sequence up to the given number
+fib_sequence = fibonacci_sequence(limit)
+print("Fibonacci sequence up to", limit, ":", fib_sequence)
+
+
+import re
+
+def parse_input(input_string):
+    # Regex pattern to match the input format
+    pattern = r'x - (-?\d+\.?\d*(?:e[+-]?\d+)?)\s*,\s*y - (-?\d+\.?\d*(?:e[+-]?\d+)?)'
+
+    # Extract the values of x and y from the input string using regex
+    match = re.match(pattern, input_string)
+    if match:
+        x = float(match.group(1))
+        y = float(match.group(2))
+        return x, y
+    else:
+        return None, None
+
+def print_sum(x, y, output_format):
+    if x is None or y is None:
+        print("Invalid input format")
+        return
+
+    # Calculate the sum
+    sum = x + y
+
+    if output_format == "decimal":
+        print(f"The sum of x and y is: {sum:.2f}")
+    elif output_format == "scientific":
+        print(f"The sum of x and y is: {sum:.2e}")
+    else:
+        print("Invalid output format")
+
+# Get user input
+user_input = input("Enter the values of x and y in the format 'x - value, y - value': ")
+
+# Parse the input
+x, y = parse_input(user_input)
+
+# Print the sum
+if x is not None and y is not None:
+    output_format = input("Enter the output format (decimal/scientific): ")
+    print_sum(x, y, output_format)
+
+
+import re
+
+def reverse_words(string):
+    # Remove leading and trailing whitespace
+    string = string.strip()
+    
+    # Convert multiple spaces into a single space
+    string = re.sub('\s+', ' ', string)
+    
+    # Split the string into a list of words
+    words = string.split(' ')
+    
+    # Reverse the order of the words
+    words = words[::-1]
+    
+    # Join the words back into a string
+    reversed_string = ' '.join(words)
+    
+    return reversed_string
+
+
+import json
+import csv
+
+# JSON object
+json_obj = '''
+{
+  "data": [
+    {
+      "Name": "John",
+      "Age": 25,
+      "City": "New York"
+    },
+    {
+      "Name": "Alice",
+      "Age": 30,
+      "City": "Los Angeles"
+    },
+    {
+      "Name": "Bob",
+      "Age": 20,
+      "City": "Chicago"
+    }
+  ]
+}
+'''
+
+# Parse JSON object into dictionary
+data = json.loads(json_obj)
+
+# Sort the data based on "Age" field
+sorted_data = sorted(data["data"], key=lambda x: x["Age"])
+
+# Output CSV file path
+csv_file = "output.csv"
+
+# Write sorted data into CSV file
+with open(csv_file, "w", newline="") as file:
+    writer = csv.DictWriter(file, fieldnames=["Name", "Age", "City"])
+    writer.writeheader()
+    writer.writerows(sorted_data)
+
+
+import itertools
+
+def generate_permutations(numbers):
+    permutations = []
+    
+    # Generate all permutations of the array
+    all_permutations = list(itertools.permutations(numbers))
+    
+    for perm in all_permutations:
+        odd_count = 0
+        even_count = 0
+        
+        for num in perm:
+            if num % 2 == 0:
+                even_count += 1
+            else:
+                odd_count += 1
+        
+        # Check if the permutation satisfies the condition
+        if odd_count == 2 and even_count == 1:
+            permutations.append(list(perm))
+    
+    return permutations
+
+print(generate_permutations([1, 2, 2, 3, 4]))
+
+
+def is_prime(num):
+    if num < 2:
+        return False
+    for i in range(2, int(num ** 0.5) + 1):
+        if num % i == 0:
+            return False
+    return True
+
+def is_palindrome(num):
+    return str(num) == str(num)[::-1]
+
+primes = []
+num = 10001  # Start with the first 5-digit number
+while len(primes) < 50:
+    if is_prime(num) and is_palindrome(num):
+        primes.append(num)
+    num += 1
+
+print(primes)
+
+
+def compare_strings(str1, str2):
+    # Case-sensitive comparison
+    if str1 == str2:
+        return True
+    
+    # Case-insensitive comparison
+    if str1.lower() == str2.lower():
+        return True
+    
+    return False
+
+# Example usage
+string1 = "Hello"
+string2 = "hello"
+
+print(compare_strings(string1, string2))  # Output: True
+
+
+def num_sub(s: str) -> int:
+    mod = 1000000007
+    result = 0
+    count = 0
+    for c in s:
+        count = count + 1 if c == '1' else 0
+        result = (result + count) % mod
+    return result
+
+
+from itertools import permutations
+
+def nextGreaterElement(n: int) -> int:
+    num_str = str(n)
+    num_permutations = sorted(set(int("".join(p)) for p in permutations(num_str)))
+    index = num_permutations.index(n)
+    if index + 1 < len(num_permutations) and num_permutations[index + 1] <= 2**31 - 1:
+        return num_permutations[index + 1]
+    return -1
+
+
+array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+def calculate_sum(arr):
+    if len(arr) == 0:
+        return 0
+    else:
+        return arr[0] + calculate_sum(arr[1:])
+
+sum_of_array = calculate_sum(array)
+print(sum_of_array)
+
+
+import math
+
+def is_prime_and_perfect_square(n):
+    # Check if n is less than 2
+    if n < 2:
+        return False
+    
+    # Check if n is equal to 2 or 3
+    if n == 2 or n == 3:
+        return True
+    
+    # Check if n is divisible by 2 or 3
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    
+    # Check if n is divisible by numbers of the form 6k ± 1
+    sqrt_n = int(math.sqrt(n))
+    for i in range(5, sqrt_n + 1, 6):
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+    
+    # Check if n is a perfect square
+    if int(math.sqrt(n))**2 == n:
+        return True
+    else:
+        return False
+
+
+import random
+
+
+array = ["10:00", "11:30", "10:00", "8:30", "10:00"]
+
+occurrences = {}
+
+for i, time_value in enumerate(array):
+    if time_value not in occurrences:
+        occurrences[time_value] = {"count": 1, "positions": [i]}
+    else:
+        occurrences[time_value]["count"] += 1
+        occurrences[time_value]["positions"].append(i)
+
+print(occurrences)
+
+
+def find_last_index(string, substring):
+    last_index = -1
+    found = False
+    i = 0
+    while i < len(string):
+        if string[i:i+len(substring)] == substring:
+            last_index = i
+            found = True
+        i += 1
+    if not found:
+        return -1
+    return last_index
+
+
+def print_spiral(array):
+    if not array or not array[0]:
+        return
+
+    startRow, endRow = 0, len(array) - 1
+    startCol, endCol = 0, len(array[0]) - 1
+
+    while startRow <= endRow and startCol <= endCol:
+        # Traverse top row
+        for col in range(startCol, endCol + 1):
+            print(array[startRow][col])
+
+        # Traverse right column
+        for row in range(startRow + 1, endRow + 1):
+            print(array[row][endCol])
+
+        # Traverse bottom row
+        if startRow < endRow:
+            for col in range(endCol - 1, startCol - 1, -1):
+                print(array[endRow][col])
+
+        # Traverse left column
+        if startCol < endCol:
+            for row in range(endRow - 1, startRow, -1):
+                print(array[row][startCol])
+
+        startRow += 1
+        endRow -= 1
+        startCol += 1
+        endCol -= 1
+
+# Test the function with the provided array
+array = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20]]
+print_spiral(array)
+
+
+def unique_values(arr):
+    frequency = {}
+    for num in arr:
+        if num in frequency:
+            frequency[num] += 1
+        else:
+            frequency[num] = 1
+    
+    sorted_frequency = sorted(frequency.items(), key=lambda x: x[1])
+    return sorted_frequency
+
+
+class Node:
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+        self.prev = None
+        self.next = None
+
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.cache = {}
+        self.head = Node(0, 0)
+        self.tail = Node(0, 0)
+        self.head.next = self.tail
+        self.tail.prev = self.head
+
+    def get(self, key):
+        if key in self.cache:
+            node = self.cache[key]
+            self._remove(node)
+            self._add(node)
+            return node.value
+        return None
+
+    def put(self, key, value):
+        if key in self.cache:
+            self._remove(self.cache[key])
+        elif len(self.cache) >= self.capacity:
+            del self.cache[self.tail.prev.key]
+            self._remove(self.tail.prev)
+        node = Node(key, value)
+        self.cache[key] = node
+        self._add(node)
+
+    def _remove(self, node):
+        prev = node.prev
+        next = node.next
+        prev.next = next
+        next.prev = prev
+
+    def _add(self, node):
+        next = self.head.next
+        self.head.next = node
+        node.prev = self.head
+        node.next = next
+        next.prev = node
+
+
+def factorial(n, cache):
+    if not isinstance(n, int) or n <= 0:
+        raise Exception("n should be a positive integer.")
+    if n == 0 or n == 1:
+        return 1
+    result = cache.get(n)
+    if result:
+        return result
+    result = n * factorial(n - 1, cache)
+    cache.put(n, result)
+    return result
+
+
+def main():
+    capacity = int(input("Enter the capacity of the cache: "))
+    cache = LRUCache(capacity)
+    n = int(input("Enter a positive integer: "))
+    result = factorial(n, cache)
+    print("Factorial of", n, "is", result)
+
+
+if __name__ == "__main__":
+    main()
+
+
+import datetime
+import pytz
+
+def convert_unix_timestamp(unix_timestamp, timezone=None):
+    try:
+        timestamp = datetime.datetime.fromtimestamp(unix_timestamp)
+    except OSError:
+        raise ValueError("Invalid Unix timestamp")
+    
+    if timezone:
+        try:
+            timezone = pytz.timezone(timezone)
+        except pytz.UnknownTimeZoneError:
+            raise ValueError("Invalid timezone")
+        timestamp = timezone.localize(timestamp)
+    
+    readable_format = timestamp.strftime("%A, %B %d, %H:%M:%S, %Y")
+    return readable_format
+
+
+num1 = int(input("Enter the first number: "))
+num2 = int(input("Enter the second number: "))
+
+# Swap the numbers if the first number is smaller
+if num1 < num2:
+    num1, num2 = num2, num1
+
+# Subtract the numbers and get the absolute difference
+result = num1 - num2
+if result < 0:
+    result *= -1
+
+print("The absolute difference is:", result)
+
+
+def is_valid_parentheses(s: str) -> bool:
+    stack = []
+    mapping = {")": "(", "}": "{", "]": "[", ">": "<"}
+    for char in s:
+        if char in mapping.values():
+            stack.append(char)
+        elif char in mapping.keys():
+            if not stack or mapping[char] != stack.pop():
+                return False
+        else:
+            return False
+    return not stack
+
+
+def flatten_and_sum(lst):
+    total_sum = 0
+
+    def helper(lst):
+        nonlocal total_sum
+        for item in lst:
+            if isinstance(item, int):
+                total_sum += item
+            elif isinstance(item, list):
+                helper(item)
+
+    helper(lst)
+    return total_sum
+
+
+# Define the size of the array
+rows = 4
+cols = 4
+
+# Create an empty 2-D array
+array = [[0 for _ in range(cols)] for _ in range(rows)]
+
+# Fill the array with alternating 1's and 0's
+for i in range(rows):
+    for j in range(cols):
+        if (i + j) % 2 == 0:
+            array[i][j] = 1
+
+# Print the array
+for row in array:
+    print(row)
+
+
+def are_anagrams(str1, str2):
+    # Step 1: Removing special characters and converting to lowercase
+    str1 = ''.join(e for e in str1 if e.isalnum()).lower()
+    str2 = ''.join(e for e in str2 if e.isalnum()).lower()
+
+    # Step 2: Initializing frequency counter array
+    freq_counter = [0] * 26
+
+    # Step 3: Incrementing frequency counter for str1
+    for char in str1:
+        index = ord(char) - ord('a')
+        freq_counter[index] += 1
+
+    # Step 4: Decrementing frequency counter for str2
+    for char in str2:
+        index = ord(char) - ord('a')
+        freq_counter[index] -= 1
+
+    # Step 5: Checking if all frequencies are zero
+    for count in freq_counter:
+        if count != 0:
+            return False
+
+    return True
+
+
+def compute_average(numbers):
+    sum = 0
+    count = 0
+    for num in numbers:
+        if num > 5:
+            sum += num
+            count += 1
+    average = round(sum / count)
+    return average
+
+numbers = [2, 6, 10, 4, 7, 9]
+average = compute_average(numbers)
+print(average)
+
+
+def find_first_occurrence(numbers):
+    index = -1
+    for i in range(len(numbers)):
+        if numbers[i] == 7:
+            index = i
+            break
+    if index == -1:
+        return -1
+    else:
+        return index
+
+# Testing the code with the given example
+numbers = [1, 2, 3, 5, 4, 7, 9, 8, 7]
+print(find_first_occurrence(numbers))
+
+
+def sort_array(arr):
+    for i in range(len(arr)):
+        for j in range(i+1, len(arr)):
+            if arr[i] > arr[j]:
+                arr[i], arr[j] = arr[j], arr[i]
+    return arr
+
+def filter_positive_greater_than_10(arr):
+    filtered_array = []
+    for num in arr:
+        if num > 10:
+            filtered_array.append(num)
+    return sort_array(filtered_array)
+
+array = [-2, -5, 3, 6, 0, -3]
+result_array = filter_positive_greater_than_10(array)
+print(result_array)
+
+
+def sum_array_elements(arr):
+    # Base case: if the array is empty, return 0
+    if len(arr) == 0:
+        return 0
+    # Recursive case: compute the sum of the first element and the sum of the rest of the array
+    return arr[0] + sum_array_elements(arr[1:])
+
+# Test the function
+arr = [1, 2, 3, 4]
+print(sum_array_elements(arr)) # Output: 10
+
+
+data = [
+  {
+    "Name": "John",
+    "Age": 25,
+    "City": "New York"
+  },
+  {
+    "Name": "Mary",
+    "Age": 30,
+    "City": "Los Angeles"
+  },
+  {
+    "Name": "Bob",
+    "Age": 35,
+    "City": "Chicago"
+  }
+]
+
+
+def find_max_min(a, b, c):
+    maximum = a if a >= b and a >= c else b if b >= c else c
+    minimum = a if a <= b and a <= c else b if b <= c else c
+    return maximum, minimum
+
+# Example usage:
+result = find_max_min(4, 8, 2)
+print(result)  # Output: (8, 2)
+
+
+def handle_animal(input):
+    switcher = {
+        "cat": "Meow!",
+        "dog": "Woof!",
+        "mouse": "Squeak!",
+        "rabbit": "Hop!",
+    }
+    
+    return switcher.get(input, "Unknown animal")
+
+print(handle_animal("cat"))     # Output: Meow!
+print(handle_animal("dog"))     # Output: Woof!
+print(handle_animal("mouse"))   # Output: Squeak!
+print(handle_animal("rabbit"))  # Output: Hop!
+print(handle_animal("lion"))    # Output: Unknown animal
+
+
+import math
+
+def is_prime(n):
+    if n <= 1:
+        return False
+    if n <= 3:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    return True
+
+def prime_numbers():
+    primes = []
+    for num in range(100000):
+        if is_prime(num):
+            primes.append(num)
+    return primes
+
+print(prime_numbers())
+
+
+def is_valid_date(date):
+    # Mapping of month names to their respective number
+    month_map = {
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+    }
+
+    # Mapping of month numbers to their respective number of days
+    month_days_map = {
+        1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
+        7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
+    }
+
+    # Remove any leading or trailing whitespaces
+    date = date.strip()
+
+    # Determine the separator used in the date
+    separators = ['/','-','.']
+    separator = None
+    for sep in separators:
+        if sep in date:
+            separator = sep
+            break
+
+    if separator is None:
+        return False
+
+    # Split the date into month, day, and year
+    parts = date.split(separator)
+
+    if len(parts) != 3:
+        return False
+
+    # Extract the month, day, and year from the parts
+    if separator == '.':
+        month, day, year = parts[0], parts[1], parts[2]
+    else:
+        month, day, year = parts[0], parts[1], parts[2][:4] # Handle case of year with more than 4 digits
+
+    # Convert the month to a number
+    if month.isdigit():
+        month = int(month)
+    else:
+        month = month_map.get(month.lower())
+
+    # Check if the month is valid
+    if month is None or month < 1 or month > 12:
+        return False
+
+    # Check if the year is valid
+    if not year.isdigit() or len(year) != 4:
+        return False
+
+    year = int(year)
+
+    # Check for dates before the adoption of the Gregorian calendar (October 4, 1582 and earlier)
+    if year < 1582 or (year == 1582 and month < 10) or (year == 1582 and month == 10 and day < 4):
+        return False
+
+    # Check if it's a leap year and adjust the number of days in February accordingly
+    if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
+        month_days_map[2] = 29
+
+    # Check if the day is valid
+    if not day.isdigit() or int(day) < 1 or int(day) > month_days_map[month]:
+        return False
+
+    return True
+
+
+matrix = [[1,2,3],[4,0,6],[7,8,9]]
+
+found_zero = False
+
+for i in range(len(matrix)):
+    for j in range(len(matrix[i])):
+        if matrix[i][j] == 0:
+            print("Zero element found at position (row, column):", i, j)
+            found_zero = True
+            break
+    if found_zero:
+        break
+
+if not found_zero:
+    print("No zero element found")
+
+
+def multiply_matrix(a, b):
+    c = [[0, 0], [0, 0]]
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                c[i][j] += a[i][k] * b[k][j]
+    return c
+
+def power_matrix(matrix, n):
+    if n == 0 or n == 1:
+        return matrix
+    half_power = power_matrix(matrix, n // 2)
+    result = multiply_matrix(half_power, half_power)
+    if n % 2 == 1:
+        result = multiply_matrix(result, matrix)
+    return result
+
+def fibonacci(k):
+    if k <= 0:
+        return None
+    if k == 1:
+        return 0
+    matrix = [[1, 1], [1, 0]]
+    matrix_power = power_matrix(matrix, k - 1)
+    return matrix_power[0][0]
+
+# Testing the code
+k = 6
+fib_k = fibonacci(k)
+print(f"The {k}th element in the Fibonacci sequence is: {fib_k}")
+
+
+def is_armstrong_number(n):
+    num_str = str(n)
+    num_digits = len(num_str)
+    sum_cubes = 0
+    for i in range(num_digits):
+        digit = int(num_str[i])
+        sum_cubes += digit**num_digits
+    if sum_cubes == n:
+        return True
+    else:
+        return False
+
+
+import tensorflow as tf
+from tensorflow.keras.datasets import imdb
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, LSTM, Dense
+
+# Set the maximum number of words to be used in the vocabulary
+max_words = 10000
+
+# Load the IMDB movie review dataset
+(x_train, y_train), (x_test, y_test) = imdb.load_data(num_words=max_words)
+
+# Pad the sequences to have the same length
+max_sequence_length = 250
+x_train = tf.keras.preprocessing.sequence.pad_sequences(x_train, maxlen=max_sequence_length)
+x_test = tf.keras.preprocessing.sequence.pad_sequences(x_test, maxlen=max_sequence_length)
+
+# Build the model
+model = Sequential()
+model.add(Embedding(max_words, 32, input_length=max_sequence_length))
+model.add(LSTM(64))
+model.add(Dense(1, activation='sigmoid'))
+
+# Compile the model
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+# Train the model
+model.fit(x_train, y_train, validation_split=0.2, epochs=3, batch_size=128)
+
+# Evaluate the model on the test set
+_, accuracy = model.evaluate(x_test, y_test)
+print('Test accuracy:', accuracy)
+
+
+def transpose_array(arr):
+    transposed_arr = []
+
+    # Step 2: Check for empty or non-numeric array
+    if len(arr) == 0 or any(not isinstance(element, (int, float)) for row in arr for element in row):
+        return []
+
+    # Step 3: Iterate through each row in the original array
+    for i in range(len(arr)):
+        row = arr[i]
+        transposed_row = []
+
+        # Step 4: Iterate through each element in the row
+        for j in range(len(row)):
+            element = row[j]
+
+            # Step 5: Convert negative numbers to absolute values
+            if element < 0:
+                element = abs(element)
+
+            # Step 6: Assign element at (i, j) to (j, i) in the transposed array
+            transposed_row.append(element)
+
+        transposed_arr.append(transposed_row)
+
+    # Step 7: Remove duplicate elements from the transposed array
+    transposed_arr = [list(set(row)) for row in transposed_arr]
+
+    # Step 8: Return the transposed array
+    return transposed_arr
+
+
+from typing import List
+
+class Student:
+    def __init__(self, name: str, age: int, gpa: float):
+        self.name = name
+        self.age = age
+        self.gpa = gpa
+        self.subjects = []
+
+    def add_subject(self, subject: str):
+        if not subject or not subject.isalpha():
+            print("Invalid subject name!")
+            return
+
+        if subject in self.subjects:
+            print("Student is already studying this subject.")
+            return
+
+        self.subjects.append(subject)
+        self.subjects.sort()
+
+    def remove_subject(self, subject: str):
+        if not subject or not subject.isalpha():
+            print("Invalid subject name!")
+            return
+
+        if subject in self.subjects:
+            self.subjects.remove(subject)
+        else:
+            print("Student is not studying this subject.")
+
+    def calculate_average_grade(self):
+        if not self.subjects:
+            print("Student is not studying any subjects.")
+            return 0.0
+
+        total_grades = 0.0
+        for subject in self.subjects:
+            total_grades += self.gpa
+
+        return total_grades / len(self.subjects)
+
+    def is_struggling(self):
+        if not self.subjects:
+            print("Student is not studying any subjects.")
+            return False
+
+        return self.gpa < 3.0
+
+    def display_subjects(self):
+        if not self.subjects:
+            print("Student is not studying any subjects.")
+            return
+
+        for subject in self.subjects:
+            print(subject)
+
+    def update_grade(self, subject: str, grade: float):
+        if not subject or not subject.isalpha():
+            print("Invalid subject name!")
+            return
+
+        if grade < 0 or grade > 100:
+            print("Invalid grade value!")
+            return
+
+        if subject in self.subjects:
+            self.gpa = (self.gpa * len(self.subjects) - self.gpa + grade) / len(self.subjects)
+        else:
+            print("Student is not studying this subject.")
+
+
+import re
+
+def capitalize_and_remove_special(strings):
+    result = []
+    for string in strings:
+        # Check if the string contains special characters
+        if not re.match("^[a-zA-Z0-9\s]*$", string):
+            continue
+
+        # Capitalize the string and add it to the result list
+        result.append(string.upper())
+
+    return result
+
+
+import re
+from datetime import datetime, timedelta
+
+class ISODate:
+    def __init__(self, iso_date):
+        if self.validate_iso_date(iso_date):
+            self.year, self.month, self.day = map(int, re.findall(r'\d+', iso_date))
+        else:
+            raise ValueError("Invalid ISO 8601 date format.")
+        
+    @staticmethod
+    def validate_iso_date(iso_date):
+        pattern = r'^\d{4}-\d{2}-\d{2}$'
+        return re.match(pattern, iso_date) is not None
+    
+    def to_date_format(self, date_format):
+        if date_format == 'dd-mm-yyyy':
+            return f"{self.day:02d}-{self.month:02d}-{self.year}"
+        elif date_format == 'mm-dd-yyyy':
+            return f"{self.month:02d}-{self.day:02d}-{self.year}"
+        elif date_format == 'yyyy-mm-dd':
+            return f"{self.year}-{self.month:02d}-{self.day:02d}"
+        else:
+            raise ValueError("Invalid date format.")
+            
+    def calculate_days_between(self, other_date):
+        other_year, other_month, other_day = map(int, re.findall(r'\d+', other_date))
+        date1 = datetime(self.year, self.month, self.day)
+        date2 = datetime(other_year, other_month, other_day)
+        return abs((date2 - date1).days)
+    
+    def is_leap_year(self):
+        if self.year % 4 == 0:
+            if self.year % 100 == 0:
+                if self.year % 400 == 0:
+                    return True
+                else:
+                    return False
+            else:
+                return True
+        else:
+            return False
+    
+    def is_weekend(self):
+        date = datetime(self.year, self.month, self.day)
+        return date.weekday() >= 5
+    
+    def convert_timezone(self, timezone):
+        date = datetime(self.year, self.month, self.day)
+        timezone_offset = timedelta(hours=timezone)
+        converted_date = date + timezone_offset
+        return converted_date.strftime("%Y-%m-%d")
+    
+    def find_day_of_week(self):
+        date = datetime(self.year, self.month, self.day)
+        return date.strftime("%A")
+
+
+def is_anagram(str1, str2):
+    # Remove special characters and whitespace from both strings
+    str1 = ''.join(e for e in str1 if e.isalnum())
+    str2 = ''.join(e for e in str2 if e.isalnum())
+
+    # Check if the length of both strings are equal
+    if len(str1) != len(str2):
+        return False
+
+    # Convert both strings to lowercase
+    str1 = str1.lower()
+    str2 = str2.lower()
+
+    # Create dictionaries to store character frequencies
+    char_freq1 = {}
+    char_freq2 = {}
+
+    # Count the frequency of each character in str1
+    for char in str1:
+        if char in char_freq1:
+            char_freq1[char] += 1
+        else:
+            char_freq1[char] = 1
+
+    # Count the frequency of each character in str2
+    for char in str2:
+        if char in char_freq2:
+            char_freq2[char] += 1
+        else:
+            char_freq2[char] = 1
+
+    # Check if the frequency of each character is the same in both strings
+    for char in char_freq1:
+        if char not in char_freq2 or char_freq1[char] != char_freq2[char]:
+            return False
+
+    return True
+
+
+from typing import List
+
+def combinations(s: str) -> List[str]:
+    if len(s) == 0:
+        return [""]  # Base case: return an empty string
+    else:
+        result = []
+        for i in range(len(s)):
+            char = s[i]
+            remaining = s[:i] + s[i+1:]  # Exclude the current character
+            subcombinations = combinations(remaining)  # Recursive call on remaining characters
+            for combination in subcombinations:
+                result.append(combination)
+                result.append(char + combination)  # Add the current character to each subcombination
+        return result
+
+
+def count_capital_letters(lst):
+    """
+    This function counts the number of capital letters in a list of strings, ignoring any capital letters within parentheses.
+    It also handles strings containing non-alphabetic characters and considers capital letters with accents or special characters, such as "É" or "Ö".
+    It also accounts for capital letters within nested parentheses and ignores them accordingly.
+
+    Approach:
+    - Iterate over each string in the list.
+    - For each string, iterate over each character.
+    - Use a flag to track whether we are currently inside parentheses or not.
+    - If we encounter an opening parenthesis, we set the flag to True.
+    - If we encounter a closing parenthesis, we set the flag to False.
+    - If we encounter a capital letter and the flag is False, we increment our count.
+    - Finally, we return the count.
+
+    Edge Cases:
+    - The function handles strings with non-alphabetic characters by simply ignoring them.
+    - The function handles nested parentheses by only changing the flag when we encounter the outermost opening and closing parentheses.
+    - The function handles capital letters with accents or special characters by using the isupper() method, which returns True for any uppercase letter, regardless of whether it has accents or special characters.
+    """
+    count = 0
+    for string in lst:
+        in_parentheses = 0
+        for char in string:
+            if char == '(':
+                in_parentheses += 1
+            elif char == ')':
+                in_parentheses -= 1
+            elif char.isupper() and in_parentheses == 0:
+                count += 1
+    return count
+
+
+def combineSortedArrays(nums1, nums2):
+    i = 0
+    j = 0
+    result = []
+    
+    while i < len(nums1) and j < len(nums2):
+        if nums1[i] == nums2[j]:
+            i += 1
+            j += 1
+        elif nums1[i] < nums2[j]:
+            result.append(nums1[i])
+            i += 1
+        else:
+            result.append(nums2[j])
+            j += 1
+    
+    # Add remaining elements from nums1 and nums2
+    while i < len(nums1):
+        result.append(nums1[i])
+        i += 1
+    while j < len(nums2):
+        result.append(nums2[j])
+        j += 1
+    
+    return result
+
+# Example usage
+nums1 = [1, 1, 2, 3, 4, 5, 6]
+nums2 = [2, 4, 5, 6, 6, 7, 8, 9]
+result = combineSortedArrays(nums1, nums2)
+print(result)  # Output: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+
+import random
+
+class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self.is_word = False
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+    
+    def insert(self, word):
+        node = self.root
+        for char in word:
+            if char not in node.children:
+                node.children[char] = TrieNode()
+            node = node.children[char]
+        node.is_word = True
+    
+    def search(self, word):
+        node = self.root
+        for char in word:
+            if char not in node.children:
+                return False
+            node = node.children[char]
+        return node.is_word
+
+def generate_random_word(dictionary):
+    vowels = ['a', 'e', 'i', 'o', 'u']
+    consonants = ['b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z']
+    
+    trie = Trie()
+    with open(dictionary, 'r') as file:
+        for line in file:
+            word = line.strip()
+            trie.insert(word)
+    
+    word = ""
+    attempts = 0
+    while attempts < 1000:
+        for i in range(6):
+            if i == 0:
+                word += random.choice(consonants)
+            elif i == 5:
+                if word[i-1] in vowels:
+                    word += random.choice(consonants)
+                else:
+                    word += random.choice(vowels + consonants)
+            else:
+                if word[i-1] in vowels:
+                    word += random.choice(consonants)
+                else:
+                    word += random.choice(vowels)
+        
+        if trie.search(word):
+            return word
+        else:
+            word = ""
+            attempts += 1
+    
+    return "Error: No valid word could be generated."
+
+dictionary = "dictionary.txt"
+word = generate_random_word(dictionary)
+print("Generated valid 6 letter string:", word)
+
+
+def is_prime(num):
+    if num <= 1:
+        return False
+    for i in range(2, int(num**0.5) + 1):
+        if num % i == 0:
+            return False
+    return True
+
+def create_array(rows, cols):
+    prime_array = []
+    num = 2
+    while len(prime_array) < rows * cols:
+        if is_prime(num):
+            prime_array.append(num)
+        num += 1
+    array = []
+    for i in range(rows):
+        row = prime_array[i*cols : (i+1)*cols]
+        array.append(row)
+    return array
+
+
+import concurrent.futures
+
+filenames = ['/home/user/project_data/sample_1.json', '/home/user/project_data/sample_2.json']
+
+def process_file(filename):
+    with open(filename, 'r') as file:
+        data = file.read()
+        return data
+
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    results = executor.map(process_file, filenames)
+
+for result in results:
+    print(result)
+
+
+my_dict = {'c': 3, 'b': 2, 'a': 1}
+
+# Method 1: Sort keys and loop through the dictionary
+for key in sorted(my_dict.keys(), reverse=True):
+    value = my_dict[key]
+    print(key, value)
+
+# Method 2: Use sorted() function with items() to sort by key
+for key, value in sorted(my_dict.items(), reverse=True):
+    print(key, value)
+
+# Method 3: Use the reversed() function with keys() to loop in reverse order
+for key in reversed(sorted(my_dict.keys())):
+    value = my_dict[key]
+    print(key, value)
+
+
+def rotate_matrix(matrix):
+    n = len(matrix)
+    for layer in range(n // 2):
+        first = layer
+        last = n - 1 - layer
+        for i in range(first, last):
+            offset = i - first
+            top = matrix[first][i]
+            matrix[first][i] = matrix[last - offset][first]
+            matrix[last - offset][first] = matrix[last][last - offset]
+            matrix[last][last - offset] = matrix[i][last]
+            matrix[i][last] = top
+    return matrix
+
+
+import math
+
+def is_prime(num):
+    if num < 2:
+        return False
+    for i in range(2, int(math.sqrt(num)) + 1):
+        if num % i == 0:
+            return False
+    return True
+
+def prime_numbers(n):
+    primes = []
+    for num in range(2, n + 1):
+        if is_prime(num):
+            primes.append(num)
+    return primes
+
+
+def is_prime(n):
+    if n <= 1:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+num_primes = 0
+sum_primes = 0
+num = 2
+
+while num_primes < 100:
+    if is_prime(num):
+        num_primes += 1
+        sum_primes += num
+    num += 1
+
+print("Sum of the first 100 prime numbers:", sum_primes)
+
+
+def shift_list(lst, shift):
+    # Check for empty list
+    if not lst:
+        return []
+
+    # Calculate the effective shift value
+    shift %= len(lst)
+
+    # Shift the elements to the left or right depending on the sign of shift
+    if shift >= 0:
+        return lst[shift:] + lst[:shift]
+    else:
+        return lst[shift:] + lst[:shift+len(lst)]
+
+
+def replace_a_with_the(word_string):
+    words = word_string.split()
+    for i in range(len(words)):
+        if words[i].lower() == 'a':
+            # Check if the word is a standalone "a" (not a part of another word)
+            if i == 0 or not words[i-1].isalpha():
+                # Preserve the original word's case
+                if words[i].islower():
+                    words[i] = 'the'
+                elif words[i].istitle():
+                    words[i] = 'The'
+                elif words[i].isupper():
+                    words[i] = 'THE'
+    
+    return ' '.join(words)
+
+word_string = "I am learning a lot of new things! A cat is sitting on a mat."
+modified_string = replace_a_with_the(word_string)
+print(modified_string)
+
+
+class Person:
+    def __init__(self):
+        self.name = ""
+        self.age = 0
+        self.gender = ""
+
+    def get_name(self):
+        return self.name
+
+    def get_age(self):
+        return self.age
+
+    def get_gender(self):
+        return self.gender
+
+    def set_name(self, name):
+        if isinstance(name, str) and name != "":
+            self.name = name
+        else:
+            raise ValueError("Name should be a non-empty string.")
+
+    def set_age(self, age):
+        if isinstance(age, int) and age > 0:
+            self.age = age
+        else:
+            raise ValueError("Age should be a positive integer.")
+
+    def set_gender(self, gender):
+        if gender in ["male", "female", "other"]:
+            self.gender = gender
+        else:
+            raise ValueError("Gender should be 'male', 'female', or 'other'.")
+
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def subtractStrings(l1, l2):
+    # Create dummy head node for result linked list
+    dummy = ListNode(0)
+    curr = dummy
+
+    # Initialize pointers and carry variable
+    p1 = createLinkedList(l1)
+    p2 = createLinkedList(l2)
+    carry = 0
+
+    # Subtract digits until both pointers reach the beginning of the lists
+    while p1 or p2:
+        # Get the value of the current nodes
+        val1 = p1.val if p1 else 0
+        val2 = p2.val if p2 else 0
+
+        # Subtract the digits and add the carry
+        diff = val1 - val2 + carry
+
+        # Adjust the carry if necessary
+        if diff < 0:
+            diff += 10
+            carry = -1
+        else:
+            carry = 0
+
+        # Create a new node with the result digit and add it to the result linked list
+        curr.next = ListNode(diff % 10)
+        curr = curr.next
+
+        # Move the pointers to the previous nodes
+        if p1:
+            p1 = p1.next
+        if p2:
+            p2 = p2.next
+
+    # Check if there is still a carry remaining
+    if carry != 0:
+        curr.next = ListNode(carry)
+        curr = curr.next
+
+    # Reverse the result linked list
+    result = reverseLinkedList(dummy.next)
+
+    # Add a negative sign if necessary
+    if carry == -1:
+        result = ListNode('-', result)
+
+    return result
+
+def createLinkedList(arr):
+    dummy = ListNode(0)
+    curr = dummy
+    for val in arr[::-1]:
+        curr.next = ListNode(int(val))
+        curr = curr.next
+    return dummy.next
+
+def reverseLinkedList(head):
+    prev = None
+    curr = head
+    while curr:
+        next = curr.next
+        curr.next = prev
+        prev = curr
+        curr = next
+    return prev
+
+# Test the algorithm with the provided example
+l1 = ["1", "2", "3"]
+l2 = ["9", "2"]
+result = subtractStrings(l1, l2)
+while result:
+    print(result.val, end=" ")
+    result = result.next
+
+
+sum = 0
+for i in range(1, 11):
+    print(i)
+    if i % 2 == 0:
+        sum += i
+
+
+import datetime
+
+def check_restaurant_availability(restaurant_status, day):
+    current_time = datetime.datetime.now().time()
+    opening_time = datetime.datetime.strptime(restaurant_status[day]["opening_time"], "%H:%M").time()
+    closing_time = datetime.datetime.strptime(restaurant_status[day]["closing_time"], "%H:%M").time()
+    capacity = restaurant_status[day]["capacity"]
+    
+    if current_time >= opening_time and current_time <= closing_time and capacity > 0:
+        return True
+    else:
+        return False
+
+
+import math
+
+def calculate_distance(p1, p2, round_decimals=2):
+    if not isinstance(p1, tuple) or not isinstance(p2, tuple):
+        raise TypeError("Input points must be tuples")
+
+    if len(p1) != 3 or len(p2) != 3:
+        raise ValueError("Invalid input points")
+
+    if any(coord < 0 for coord in p1) or any(coord < 0 for coord in p2):
+        raise ValueError("Coordinates cannot be negative")
+
+    distance = math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2 + (p2[2] - p1[2]) ** 2)
+    rounded_distance = round(distance, round_decimals)
+    return rounded_distance
+
+
+def is_sorted(arr):
+    n = len(arr)
+    if n <= 1:
+        return True
+    
+    # Using binary search to check if the array is sorted
+    left = 0
+    right = n - 1
+    
+    while left < right:
+        mid = (left + right) // 2
+        
+        if arr[mid] > arr[mid + 1]:
+            return False
+        
+        if arr[mid] < arr[mid - 1]:
+            return False
+        
+        if arr[mid] > arr[left]:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    return True
+
+# Test the code
+arr = [1, 2, 4, 3]
+print(is_sorted(arr))  # Output: False
+
+
+def minOperations(target: str) -> int:
+    operations = 0
+    current_bit = '0'
+    for bit in target:
+        if bit != current_bit:
+            operations += 1
+            current_bit = bit
+    return operations
+
+
+def string_to_sorted_list(s):
+    char_list = list(s)
+    char_list.sort(reverse=True)
+    sorted_list = [str(char) for char in char_list]
+    return sorted_list
+
+
+import re
+import dns.resolver
+import asyncio
+import time
+import ssl
+import disposable_email_checker
+
+class EmailValidator:
+    def __init__(self):
+        self.email_regex = re.compile(r'^[\w\.-]+@[\w\.-]+\.\w+$')
+        self.valid_emails = []
+        self.invalid_emails = []
+        self.dns_cache = {}
+        self.rate_limit = 5  # Number of DNS lookups allowed per second
+
+    async def validate_email(self, email):
+        try:
+            if not self.email_regex.match(email):
+                self.invalid_emails.append((email, "Invalid email format"))
+                return
+
+            domain = email.split('@')[1]
+            mx_records = await self.get_mx_records(domain)
+            if not mx_records:
+                self.invalid_emails.append((email, "No MX records found"))
+                return
+
+            # Additional checks can be performed here, such as SSL certificate validation
+
+            self.valid_emails.append((email, mx_records))
+        except Exception as e:
+            self.invalid_emails.append((email, str(e)))
+
+    async def get_mx_records(self, domain):
+        if domain in self.dns_cache:
+            return self.dns_cache[domain]
+
+        await self.rate_limit_dns_lookup()
+
+        try:
+            resolver = dns.resolver.Resolver()
+            resolver.timeout = 5  # Set DNS lookup timeout
+            resolver.lifetime = 5  # Set DNS lookup lifetime
+
+            mx_records = [str(mx.exchange) for mx in resolver.query(domain, 'MX')]
+            self.dns_cache[domain] = mx_records
+            return mx_records
+        except dns.exception.DNSException as e:
+            raise Exception("DNS lookup failed") from e
+
+    async def rate_limit_dns_lookup(self):
+        current_time = time.time()
+        if 'last_lookup_time' not in dir(self):
+            self.last_lookup_time = current_time
+
+        time_elapsed = current_time - self.last_lookup_time
+        if time_elapsed < 1 / self.rate_limit:
+            await asyncio.sleep(1 / self.rate_limit - time_elapsed)
+
+        self.last_lookup_time = time.time()
+
+    def validate_emails(self, emails):
+        loop = asyncio.get_event_loop()
+        tasks = [self.validate_email(email) for email in emails]
+        loop.run_until_complete(asyncio.gather(*tasks))
+
+    def print_results(self):
+        print("Valid Email Addresses:")
+        for email, mx_records in self.valid_emails:
+            print(f"Email: {email}")
+            print(f"MX Records: {', '.join(mx_records)}")
+            print()
+
+        print("Invalid Email Addresses:")
+        for email, error in self.invalid_emails:
+            print(f"Email: {email}")
+            print(f"Error: {error}")
+            print()
+
+if __name__ == '__main__':
+    emails = [
+        "test@example.com",
+        "invalid_email",
+        "user@nonexistentdomain.com",
+    ]
+
+    validator = EmailValidator()
+    validator.validate_emails(emails)
+    validator.print_results()
+
+
+import statistics
+
+def calculate_statistics(arr):
+    # Mean
+    mean = sum(arr) / len(arr)
+
+    # Median
+    sorted_arr = sorted(arr)
+    n = len(arr)
+    if n % 2 == 0:
+        median = (sorted_arr[n // 2 - 1] + sorted_arr[n // 2]) / 2
+    else:
+        median = sorted_arr[n // 2]
+
+    # Mode
+    mode = statistics.multimode(arr)
+
+    # Range
+    range_val = max(arr) - min(arr)
+
+    # Print the statistics
+    print(f"Mean: {mean}")
+    print(f"Median: {median}")
+    print(f"Mode: {mode}")
+    print(f"Range: {range_val}")
+
+# Test the program
+arr = [130, 160, 140, 160, 160]
+calculate_statistics(arr)
+
+
+def multiply_matrices(matrix1, matrix2):
+    # Get the dimensions of the matrices
+    rows1, cols1 = len(matrix1), len(matrix1[0])
+    rows2, cols2 = len(matrix2), len(matrix2[0])
+    
+    # Check if matrices can be multiplied
+    if cols1 != rows2:
+        raise ValueError("Matrices cannot be multiplied!")
+    
+    # Create the result matrix
+    result = [[0] * cols2 for _ in range(rows1)]
+    
+    # Recursive helper function to compute the element at (i, j) in the result matrix
+    def multiply_helper(i, j):
+        if i >= rows1 or j >= cols2:
+            return 0
+        else:
+            # Compute the element at (i, j) in the result matrix
+            for k in range(cols1):
+                result[i][j] += matrix1[i][k] * matrix2[k][j]
+            return result[i][j]
+    
+    # Compute the result matrix using recursion
+    def compute_result_matrix(i, j):
+        if i < rows1:
+            if j < cols2:
+                multiply_helper(i, j)
+                compute_result_matrix(i, j + 1)
+            else:
+                compute_result_matrix(i + 1, 0)
+    
+    compute_result_matrix(0, 0)
+    
+    return result
+
+
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+
+    mid = len(arr) // 2
+    left_half = arr[:mid]
+    right_half = arr[mid:]
+
+    left_half = merge_sort(left_half)
+    right_half = merge_sort(right_half)
+
+    return merge(left_half, right_half)
+
+def merge(left_half, right_half):
+    sorted_arr = []
+    i = j = 0
+
+    while i < len(left_half) and j < len(right_half):
+        if left_half[i] <= right_half[j]:
+            sorted_arr.append(left_half[i])
+            i += 1
+        else:
+            sorted_arr.append(right_half[j])
+            j += 1
+
+    sorted_arr.extend(left_half[i:])
+    sorted_arr.extend(right_half[j:])
+    return sorted_arr
+
+arr = [4, 2, 9, 10, 5]
+sorted_arr = merge_sort(arr)
+print(sorted_arr)
+
+
+import subprocess
+
+confirmation = input("Are you sure you want to delete the previous branch? (y/n): ")
+
+if confirmation.lower() == "y":
+    subprocess.run(["git", "branch", "-d", "previous-branch"])
+else:
+    print("Branch deletion aborted.")
+
+
+import sys
+
+def process_data(input_data):
+    # TODO: Implement your specific algorithm here
+    processed_data = input_data.upper()
+    return processed_data
+
+def main():
+    # Check if the correct number of command line arguments is provided
+    if len(sys.argv) != 3:
+        print("Usage: python script.py input_file.txt output_file.txt")
+        return
+
+    # Get the input and output file names from the command line arguments
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+
+    try:
+        # Read input data from the input file
+        with open(input_file, 'r') as file:
+            input_data = file.read()
+
+        # Process the input data
+        processed_data = process_data(input_data)
+
+        # Write the processed data to the output file
+        with open(output_file, 'w') as file:
+            file.write(processed_data)
+
+        print("Script executed successfully!")
+
+    except FileNotFoundError:
+        print("Input file not found!")
+
+if __name__ == "__main__":
+    main()
+
+
+from pymongo import MongoClient
+
+def get_documents_sorted_by_field(collection_name, sort_field):
+    # Connect to MongoDB server
+    client = MongoClient('mongodb://localhost:27017/')
+    db = client['your_database_name']
+    collection = db[collection_name]
+
+    # Retrieve documents and sort by the specified field in descending order
+    documents = collection.find().sort(sort_field, -1)
+
+    # Return the sorted documents
+    return list(documents)
+
+
+def format_phone_number(phone_number):
+    # Remove any non-digit characters from the phone number
+    phone_number = ''.join(filter(str.isdigit, str(phone_number)))
+
+    # Check if the phone number is valid according to NANP
+    if len(phone_number) != 10:
+        return "Invalid phone number"
+
+    # Format the phone number in the canonical format
+    formatted_number = "+1-" + phone_number[:3] + "-" + phone_number[3:6] + "-" + phone_number[6:]
+
+    return formatted_number
+
+
+import string
+
+class MaxFrequencyWord:
+    def __init__(self):
+        self.freq_dict = {}
+        self.max_freq = 0
+        self.max_word = None
+
+    def process_string(self, input_string):
+        input_string = input_string.lower()
+        input_string = input_string.translate(str.maketrans('', '', string.punctuation))
+        words = input_string.split()
+
+        for word in words:
+            if word in self.freq_dict:
+                self.freq_dict[word] += 1
+            else:
+                self.freq_dict[word] = 1
+
+            if self.freq_dict[word] > self.max_freq:
+                self.max_freq = self.freq_dict[word]
+                self.max_word = word
+
+    def get_max_frequency_word(self):
+        return self.max_word
+
+
+# Example usage
+input_string = "The sun has set and the moon has risen"
+max_frequency_word = MaxFrequencyWord()
+max_frequency_word.process_string(input_string)
+result = max_frequency_word.get_max_frequency_word()
+print(result)
+
+
+import math
+
+def generate_primes(limit):
+    is_prime = [True] * (limit + 1)
+    is_prime[0] = is_prime[1] = False
+
+    for number in range(2, int(math.sqrt(limit)) + 1):
+        if is_prime[number]:
+            for multiple in range(number * number, limit + 1, number):
+                is_prime[multiple] = False
+
+    primes = [index for index, value in enumerate(is_prime) if value]
+    primes.reverse()
+
+    return primes
