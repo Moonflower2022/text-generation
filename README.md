@@ -10,6 +10,6 @@ A collection of text generation algorithms trained on different text sources lik
 
 ## generation algorithms
 
-* [LSTM (Long Short-term Memory)](https://en.wikipedia.org/wiki/Long_short-term_memory): `train_lstm.ipynb`
-* [GRU (Gated Recurrent Unit)](https://en.wikipedia.org/wiki/Gated_recurrent_unit): `train_gru.ipynb`
+* [LSTM (Long Short-term Memory)](https://en.wikipedia.org/wiki/Long_short-term_memory) and [GRU (Gated Recurrent Unit)](https://en.wikipedia.org/wiki/Gated_recurrent_unit): `train_rnn.ipynb`
+* : `train_lstm_or_gru.ipynb`
 * [Markov Chain](https://en.wikipedia.org/wiki/Markov_chain): `markov_chain.py`
