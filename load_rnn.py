@@ -89,8 +89,6 @@ if __name__ == '__main__':
     for char, i in CHARACTER_ENCODING.items():
         INDEX_ENCODING[i] = char
 
-    print(INDEX_ENCODING)
-    print(CHARACTER_ENCODING)
 
     INPUT_SEQUENCE_LENGTH = 5
 
