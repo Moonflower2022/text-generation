@@ -1,13 +1,13 @@
 # text-generation
 
-A collection of text generation algorithms trained on different text sources like movie scripts, plays, etc.
+A collection of text generation algorithms trained on different text sources like movie scripts, plays, code, etc.
 
 ## text sources (in /texts)
 
 * `peter_pan.txt`: <https://www.gutenberg.org/files/16/16-h/16-h.htm#chap17>
 * `shakespeare.txt`: <https://www.gutenberg.org/ebooks/100>
 * `bee_movie.txt`: <https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt>
-* `python_snippets`: <https://huggingface.co/datasets/jtatman/python-code-dataset-500k?row=0>
+* `python_snippets*`: <https://huggingface.co/datasets/jtatman/python-code-dataset-500k?row=0>
 
 ## generation algorithms
 
